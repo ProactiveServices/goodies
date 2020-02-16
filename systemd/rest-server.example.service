@@ -1,0 +1,47 @@
+[Unit]
+Description=Restic rest-server daemon
+After=syslog.target
+After=network.target
+
+[Service]
+ExecStart=<binary path> <switches>
+Restart=always
+RestartSec=5
+# If you intend to run multiple rest-server instances, this can help discern them in syslog.
+#SyslogIdentifier=rest-server-<instance name>
+Type=simple
+
+# Scheduling / performance
+Nice=8
+IOSchedulingPriority=5
+
+# Security hardening
+
+# Example RW/RO paths. In this case, the RW path is rest-server's path,
+# the RO path is the binary.
+#ReadWritePaths=/srv/rest-server
+#ReadOnlyPaths=/usr/local/bin/rest-server
+
+# Commented-out directives are for systemd v242+
+# When systemd is updated they need to be tested before enabling.
+LockPersonality=true
+MemoryDenyWriteExecute=true
+NoNewPrivileges=true
+#ProtectClock=true
+ProtectControlGroups=true
+ProtectHome=true
+#ProtectHostname=true
+ProtectKernelModules=true
+#ProtectKernelLogs=true
+ProtectKernelTunables=true
+ProtectSystem=strict
+PrivateDevices=true
+PrivateTmp=true
+RemoveIPC=true
+# Todo: A more complex directive to investigate later
+#RestrictAddressFamilies=
+RestrictNamespaces=true
+RestrictRealtime=true
+#RestrictSUIDSGID=true
+SystemCallArchitectures=native
+SystemCallFilter=@aio @basic-io @chown @file-system @network-io @process @signal @sync @system-service @timer
