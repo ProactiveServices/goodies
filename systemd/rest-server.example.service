@@ -1,3 +1,5 @@
+# This has not been tested with rest-server's --promethus option.
+
 [Unit]
 Description=Restic rest-server daemon
 After=syslog.target
@@ -6,10 +8,13 @@ After=network.target
 [Service]
 ExecStart=<binary path> <switches>
 Restart=always
-RestartSec=5
+RestartSec=60
 # If you intend to run multiple rest-server instances, this can help discern them in syslog.
 #SyslogIdentifier=rest-server-<instance name>
 Type=simple
+# Fill in as appropriate
+User=
+Group=
 
 # Scheduling / performance
 Nice=8
@@ -17,13 +22,27 @@ IOSchedulingPriority=5
 
 # Security hardening
 
-# Example RW/RO paths. In this case, the RW path is rest-server's path,
-# the RO path is the binary.
-#ReadWritePaths=/srv/rest-server
-#ReadOnlyPaths=/usr/local/bin/rest-server
+# Specific filesystem directives
+# If using rest-server's --cpu-profile or --log directives, you will need
+# to amend as appropriate.
+# This assumes that your binary is at /usr/local/bin/rest-server and your
+# --path is set to /srv/restic
+
+# Add any other directories located at / to prohibit any filesystem access
+InaccessiblePaths=/bin /boot /lib /lost+found /media /mnt /opt /sbin /var
+                          
+# RW/RO cannot be nested inside InaccessiblePaths, so use
+# TemporaryFileSystem instead.
+TemporaryFileSystem=/srv/restic:ro /usr:ro
+BindPaths=/srv/restic
+BindReadOnlyPaths=/usr/local/bin/rest-server /srv/restic/.htpasswd /srv/restic/private_key /srv/restic/public_key
 
 # Commented-out directives are for systemd v242+
 # When systemd is updated they need to be tested before enabling.
+
+# A null CapabilityBoundingSet sets the service to have no capabilities
+CapabilityBoundingSet=
+KeyringMode=private
 LockPersonality=true
 MemoryDenyWriteExecute=true
 NoNewPrivileges=true
@@ -38,10 +57,13 @@ ProtectSystem=strict
 PrivateDevices=true
 PrivateTmp=true
 RemoveIPC=true
-# Todo: A more complex directive to investigate later
-#RestrictAddressFamilies=
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
 RestrictNamespaces=true
 RestrictRealtime=true
 #RestrictSUIDSGID=true
+# SECBIT_KEEP_CAPS defaults to "off", which is preferred for security.
+# Hence for this bit, we only lock it, without also setting it. 
+# Other bits are both set and locked.
+SecureBits=keepcaps-locked,noroot,noroot-locked,no-suid-fixup,no-suid-fixup-locked
 SystemCallArchitectures=native
 SystemCallFilter=@aio @basic-io @chown @file-system @network-io @process @signal @sync @system-service @timer
